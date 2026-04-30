@@ -11,5 +11,9 @@ node_modules/
 dist/
 .vite/
 
+# Data & artifacts
+backend/data/
+backend/artifacts/
+
 # OS
 .DS_Store
