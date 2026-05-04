@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import joblib
+import mlflow
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier, Pool
@@ -43,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--depth", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=0.1)
     parser.add_argument("--max-rows", type=int, default=None)
+    parser.add_argument("--experiment", type=str, default="fraud-synthetic")
     return parser.parse_args()
 
 
@@ -198,8 +200,42 @@ def main() -> None:
         "input_path": str(args.input_path),
     }
 
-    with (args.out_dir / "metrics.json").open("w", encoding="utf-8") as file:
+    metrics_path = args.out_dir / "metrics.json"
+    with metrics_path.open("w", encoding="utf-8") as file:
         json.dump(metrics, file, indent=2)
+
+    mlruns_dir = Path(__file__).resolve().parents[1] / "mlruns"
+    mlruns_dir.mkdir(parents=True, exist_ok=True)
+    mlflow.set_tracking_uri(str(mlruns_dir))
+    mlflow.set_experiment(args.experiment)
+
+    run_name = f"catboost_{model_version}"
+    with mlflow.start_run(run_name=run_name):
+        mlflow.log_params(
+            {
+                "input_path": str(args.input_path),
+                "train_ratio": args.train_ratio,
+                "valid_ratio": args.valid_ratio,
+                "seed": args.seed,
+                "iterations": args.iterations,
+                "depth": args.depth,
+                "learning_rate": args.learning_rate,
+                "max_rows": args.max_rows,
+                "fraud_rate_train": float(y_train.mean()),
+            }
+        )
+        mlflow.log_metrics(
+            {
+                "valid_auc": float(valid_auc),
+                "test_auc": float(test_auc),
+                "valid_pr_auc": float(valid_pr_auc),
+                "test_pr_auc": float(test_pr_auc),
+                "threshold": float(threshold),
+                "best_f1": float(best_f1),
+            }
+        )
+        mlflow.log_artifact(str(artifact_path))
+        mlflow.log_artifact(str(metrics_path))
 
     print(f"Saved model to {artifact_path}")
     print(f"Metrics saved to {args.out_dir / 'metrics.json'}")
