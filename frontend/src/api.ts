@@ -2,6 +2,12 @@ export type PredictionResponse = {
   is_fraud: boolean;
   score: number;
   model_version: string;
+  threshold: number;
+  explanations: Array<{
+    feature: string;
+    contribution: number;
+    direction: "increase" | "decrease";
+  }>;
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";

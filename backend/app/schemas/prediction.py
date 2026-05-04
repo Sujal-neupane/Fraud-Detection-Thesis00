@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,3 +12,14 @@ class PredictionResponse(BaseModel):
     is_fraud: bool
     score: float
     model_version: str
+    threshold: float
+    explanations: List["FeatureContribution"] = Field(default_factory=list)
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    contribution: float
+    direction: str
+
+
+PredictionResponse.model_rebuild()
