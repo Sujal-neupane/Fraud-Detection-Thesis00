@@ -23,7 +23,7 @@ def health() -> dict:
 @app.post("/predict", response_model=PredictionResponse)
 def predict_fraud(payload: PredictionRequest) -> PredictionResponse:
     try:
-        is_fraud, score, model_version, threshold, explanations = predict(
+        is_fraud, score, model_version, threshold, explanations, business_impact = predict(
             payload.features
         )
     except NotImplementedError as exc:
@@ -34,4 +34,5 @@ def predict_fraud(payload: PredictionRequest) -> PredictionResponse:
         model_version=model_version,
         threshold=threshold,
         explanations=explanations,
+        business_impact=business_impact,
     )

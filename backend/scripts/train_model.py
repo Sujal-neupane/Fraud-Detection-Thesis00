@@ -11,7 +11,8 @@ import mlflow
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier, Pool
-from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
+from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score, roc_auc_score
+from scipy import stats
 
 TARGET_COL = "isFraud"
 TIME_COL = "TransactionDT"
@@ -41,10 +42,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--valid-ratio", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--iterations", type=int, default=300)
-    parser.add_argument("--depth", type=int, default=6)
-    parser.add_argument("--learning-rate", type=float, default=0.1)
+    parser.add_argument("--depth", type=int, default=8)
+    parser.add_argument("--learning-rate", type=float, default=0.05)
     parser.add_argument("--max-rows", type=int, default=None)
     parser.add_argument("--experiment", type=str, default="fraud-synthetic")
+    parser.add_argument("--average-fraud-value", type=float, default=250.0)
+    parser.add_argument("--false-positive-cost", type=float, default=5.0)
+    parser.add_argument("--target-precision", type=float, default=0.7)
+    parser.add_argument(
+        "--reference-path",
+        type=Path,
+        default=Path(__file__).resolve().parents[1]
+        / "data"
+        / "processed"
+        / "ieee-cis"
+        / "train.csv",
+        help="Real IEEE-CIS reference dataset used for drift comparison.",
+    )
     return parser.parse_args()
 
 
@@ -99,19 +113,120 @@ def apply_imputation(
     return filled
 
 
-def find_best_threshold(y_true: np.ndarray, scores: np.ndarray) -> Tuple[float, float]:
-    thresholds = np.linspace(0.05, 0.95, 19)
+def select_strict_threshold(
+    y_true: np.ndarray, scores: np.ndarray, target_precision: float
+) -> Tuple[float, float, float, float]:
+    thresholds = np.linspace(0.3, 0.75, 91)
     best_threshold = 0.5
+    best_precision = 0.0
+    best_recall = 0.0
     best_f1 = 0.0
+    best_score = -1.0
+
+    fallback_threshold = 0.5
+    fallback_precision = 0.0
+    fallback_recall = 0.0
+    fallback_f1 = 0.0
+    fallback_score = -1.0
+    min_recall = 0.05
 
     for threshold in thresholds:
         preds = (scores >= threshold).astype(int)
-        score = f1_score(y_true, preds)
-        if score > best_f1:
-            best_f1 = score
-            best_threshold = float(threshold)
+        precision = precision_score(y_true, preds, zero_division=0)
+        recall = recall_score(y_true, preds, zero_division=0)
+        f1 = f1_score(y_true, preds, zero_division=0)
 
-    return best_threshold, float(best_f1)
+        score = (0.6 * precision) + (0.4 * recall)
+
+        if score > fallback_score or (
+            score == fallback_score and threshold > fallback_threshold
+        ):
+            fallback_threshold = float(threshold)
+            fallback_precision = float(precision)
+            fallback_recall = float(recall)
+            fallback_f1 = float(f1)
+            fallback_score = float(score)
+
+        if precision >= target_precision and recall >= min_recall:
+            if score > best_score or (
+                score == best_score and threshold > best_threshold
+            ):
+                best_score = float(score)
+                best_threshold = float(threshold)
+                best_precision = float(precision)
+                best_recall = float(recall)
+                best_f1 = float(f1)
+
+    if best_score >= 0:
+        return best_threshold, best_precision, best_recall, best_f1
+
+    return fallback_threshold, fallback_precision, fallback_recall, fallback_f1
+
+
+def population_stability_index(
+    expected: pd.Series, actual: pd.Series, buckets: int = 10
+) -> float:
+    expected_values = pd.to_numeric(expected, errors="coerce").dropna()
+    actual_values = pd.to_numeric(actual, errors="coerce").dropna()
+
+    if expected_values.empty or actual_values.empty:
+        return 0.0
+
+    quantiles = np.linspace(0, 1, buckets + 1)
+    split_points = np.unique(expected_values.quantile(quantiles).to_numpy())
+    if len(split_points) < 3:
+        return 0.0
+
+    expected_bins = pd.cut(
+        expected_values,
+        bins=split_points,
+        include_lowest=True,
+        duplicates="drop",
+    )
+    actual_bins = pd.cut(
+        actual_values,
+        bins=split_points,
+        include_lowest=True,
+        duplicates="drop",
+    )
+
+    expected_dist = expected_bins.value_counts(normalize=True, sort=False)
+    actual_dist = actual_bins.value_counts(normalize=True, sort=False)
+
+    aligned = pd.concat([expected_dist, actual_dist], axis=1, keys=["expected", "actual"]).fillna(0.0001)
+    expected_pct = aligned["expected"].replace(0, 0.0001)
+    actual_pct = aligned["actual"].replace(0, 0.0001)
+    return float(((actual_pct - expected_pct) * np.log(actual_pct / expected_pct)).sum())
+
+
+def compute_ks(expected: pd.Series, actual: pd.Series) -> float:
+    expected_values = pd.to_numeric(expected, errors="coerce").dropna()
+    actual_values = pd.to_numeric(actual, errors="coerce").dropna()
+    if expected_values.empty or actual_values.empty:
+        return 0.0
+    result = stats.ks_2samp(expected_values, actual_values)
+    return float(result.statistic)
+
+
+def compute_business_impact(
+    threshold: float,
+    scores: np.ndarray,
+    average_fraud_value: float,
+    false_positive_cost: float,
+) -> Dict[str, float]:
+    flagged = scores >= threshold
+    flagged_per_10k = float(flagged.mean() * 10000)
+    estimated_savings = float(scores.mean() * 10000 * average_fraud_value)
+    estimated_friction = float(flagged_per_10k * false_positive_cost)
+    return {
+        "threshold": float(threshold),
+        "flagged_per_10k": flagged_per_10k,
+        "average_fraud_value": float(average_fraud_value),
+        "false_positive_cost": float(false_positive_cost),
+        "estimated_savings": estimated_savings,
+        "estimated_friction": estimated_friction,
+        "net_benefit": float(estimated_savings - estimated_friction),
+    }
 
 
 def main() -> None:
@@ -149,6 +264,9 @@ def main() -> None:
         loss_function="Logloss",
         eval_metric="AUC",
         random_seed=args.seed,
+        auto_class_weights="Balanced",
+        l2_leaf_reg=6.0,
+        random_strength=1.5,
         verbose=False,
     )
 
@@ -163,7 +281,37 @@ def main() -> None:
     valid_pr_auc = average_precision_score(y_valid, valid_scores)
     test_pr_auc = average_precision_score(y_test, test_scores)
 
-    threshold, best_f1 = find_best_threshold(y_valid.to_numpy(), valid_scores)
+    threshold, selected_precision, selected_recall, best_f1 = select_strict_threshold(
+        y_valid.to_numpy(), valid_scores, args.target_precision
+    )
+    business_impact = compute_business_impact(
+        threshold,
+        valid_scores,
+        args.average_fraud_value,
+        args.false_positive_cost,
+    )
+
+    if not args.reference_path.exists():
+        raise FileNotFoundError(f"Missing reference CSV for drift analysis: {args.reference_path}")
+
+    reference_df = pd.read_csv(args.reference_path, low_memory=False)
+    drift_features = [
+        col
+        for col in df.columns
+        if col in reference_df.columns and pd.api.types.is_numeric_dtype(df[col])
+    ]
+    drift_summary = []
+    if drift_features:
+        reference = reference_df[drift_features]
+        comparison = df[drift_features]
+        for feature in drift_features[:25]:
+            drift_summary.append(
+                {
+                    "feature": feature,
+                    "ks": compute_ks(reference[feature], comparison[feature]),
+                    "psi": population_stability_index(reference[feature], comparison[feature]),
+                }
+            )
 
     model_version = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +333,11 @@ def main() -> None:
         "valid_pr_auc": float(valid_pr_auc),
         "test_pr_auc": float(test_pr_auc),
         "threshold": float(threshold),
+        "selected_precision": float(selected_precision),
+        "selected_recall": float(selected_recall),
         "best_f1": float(best_f1),
+        "business_impact": business_impact,
+        "drift_summary": drift_summary,
         "rows": {
             "train": int(len(x_train)),
             "valid": int(len(x_valid)),
@@ -231,11 +383,28 @@ def main() -> None:
                 "valid_pr_auc": float(valid_pr_auc),
                 "test_pr_auc": float(test_pr_auc),
                 "threshold": float(threshold),
+                "selected_precision": float(selected_precision),
+                "selected_recall": float(selected_recall),
                 "best_f1": float(best_f1),
+                "business_impact_flagged_per_10k": float(
+                    business_impact["flagged_per_10k"]
+                ),
+                "business_impact_estimated_savings": float(
+                    business_impact["estimated_savings"]
+                ),
+                "business_impact_estimated_friction": float(
+                    business_impact["estimated_friction"]
+                ),
+                "business_impact_net_benefit": float(business_impact["net_benefit"]),
             }
         )
         mlflow.log_artifact(str(artifact_path))
         mlflow.log_artifact(str(metrics_path))
+
+    analysis_path = args.out_dir / "analysis.json"
+    with analysis_path.open("w", encoding="utf-8") as file:
+        json.dump({"business_impact": business_impact, "drift_summary": drift_summary}, file, indent=2)
+    mlflow.log_artifact(str(analysis_path))
 
     print(f"Saved model to {artifact_path}")
     print(f"Metrics saved to {args.out_dir / 'metrics.json'}")

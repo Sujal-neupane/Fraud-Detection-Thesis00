@@ -8,6 +8,14 @@ export type PredictionResponse = {
     contribution: number;
     direction: "increase" | "decrease";
   }>;
+  business_impact?: {
+    threshold: number;
+    flagged: boolean;
+    transaction_amount: number;
+    expected_fraud_loss: number;
+    false_positive_cost: number;
+    net_benefit: number;
+  };
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";

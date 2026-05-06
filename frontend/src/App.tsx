@@ -12,7 +12,6 @@ import {
 } from "recharts";
 
 import { predict, PredictionResponse } from "./api";
-import { dashboardData } from "./analysis-data";
 
 const DEFAULT_FEATURES = {
   TransactionAmt: 120.5,
@@ -40,6 +39,9 @@ function App() {
     JSON.stringify(DEFAULT_FEATURES, null, 2)
   );
   const [result, setResult] = useState<PredictionResponse | null>(null);
+  const [submittedFeatures, setSubmittedFeatures] = useState<
+    Record<string, number> | null
+  >(DEFAULT_FEATURES);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,6 +63,7 @@ function App() {
       return;
     }
 
+    setSubmittedFeatures(parsed);
     setIsLoading(true);
     try {
       const prediction = await predict(parsed);
@@ -87,68 +90,82 @@ function App() {
     direction: item.direction
   }));
 
+  const transactionAmount = submittedFeatures?.TransactionAmt ?? 0;
+  const inputFeatureCount = submittedFeatures
+    ? Object.keys(submittedFeatures).length
+    : 0;
+  const topExplanation = explanations[0];
+  const liveMetrics = [
+    {
+      label: "Transaction amount",
+      value: formatCurrency.format(transactionAmount),
+      note: submittedFeatures
+        ? `From ${inputFeatureCount} pasted fields`
+        : "Waiting for input"
+    },
+    {
+      label: "Model score",
+      value: result ? percent(result.score) : "--",
+      note: result
+        ? result.is_fraud
+          ? "High risk transaction"
+          : "Low risk transaction"
+        : "Run a prediction"
+    },
+    {
+      label: "Decision threshold",
+      value: result ? result.threshold.toFixed(2) : "--",
+      note: result ? "Used for classification" : "No decision yet"
+    },
+    {
+      label: "Top risk driver",
+      value: topExplanation ? topExplanation.feature : "--",
+      note: topExplanation
+        ? `${topExplanation.direction === "increase" ? "Increases" : "Decreases"} fraud risk`
+        : "Awaiting explanation"
+    }
+  ];
+
   return (
     <div className="app">
       <header className="hero">
         <div className="hero__text">
-          <span className="pill">Synthetic 2019-2025 | Live analytics</span>
+          <span className="pill">Transaction-driven fraud analysis</span>
           <h1>Fraud Intelligence Command Center</h1>
           <p>
-            Monitor fraud risk, drift signals, and operational impact in one
-            view. The dashboard summarizes model performance, data health, and
-            live scoring from the API.
+            Paste a transaction, score it, and immediately see the risk level,
+            threshold decision, and the features that drove the result.
           </p>
-          <div className="hero__meta">
-            <div>
-              <span>Model version</span>
-              <strong>{dashboardData.summary.modelVersion}</strong>
-            </div>
-            <div>
-              <span>PR-AUC</span>
-              <strong>{percent(dashboardData.summary.prAuc)}</strong>
-            </div>
-            <div>
-              <span>Avg response</span>
-              <strong>{dashboardData.summary.avgResponse}</strong>
-            </div>
-          </div>
         </div>
         <div className="hero__card">
-          <h2>System snapshot</h2>
+          <h2>How this works</h2>
           <div className="snapshot">
             <div>
-              <span>Data window</span>
-              <strong>{dashboardData.summary.dataWindow}</strong>
+              <span>Input</span>
+              <strong>JSON transaction fields</strong>
             </div>
             <div>
-              <span>AUC</span>
-              <strong>{percent(dashboardData.summary.auc)}</strong>
+              <span>Output</span>
+              <strong>Fraud score + explanation</strong>
             </div>
             <div>
-              <span>Recall@1%</span>
-              <strong>{percent(dashboardData.summary.recallAt1)}</strong>
+              <span>Basis</span>
+              <strong>Threshold + SHAP values</strong>
             </div>
           </div>
           <p className="muted">
-            Metrics refresh after each training run. MLflow tracks every
-            experiment for reproducibility.
+            Everything on this page comes from the transaction you paste, except
+            the model itself which is trained offline.
           </p>
         </div>
       </header>
 
       <section className="kpi-grid">
-        {dashboardData.kpis.map((item) => (
+        {liveMetrics.map((item) => (
           <div key={item.label} className="kpi-card">
             <span>{item.label}</span>
-            <strong>
-              {item.label === "Alert precision"
-                ? percent(item.value)
-                : formatCompact.format(item.value)}
-            </strong>
-            <em className={item.delta >= 0 ? "delta up" : "delta down"}>
-              {item.delta >= 0 ? "+" : ""}
-              {percent(Math.abs(item.delta))}
-            </em>
+            <strong>{item.value}</strong>
+            <em className="delta up">{item.note}</em>
           </div>
         ))}
       </section>
@@ -177,6 +194,10 @@ function App() {
           </form>
 
           <div className="panel__output">
+            <div className="result-preview">
+              <span>Submitted transaction snapshot</span>
+              <pre>{featuresText}</pre>
+            </div>
             {error && <p className="panel__error">{error}</p>}
             {result && (
               <div className="panel__result">
@@ -256,6 +277,35 @@ function App() {
             </>
           )}
         </div>
+      </section>
+
+      <section className="card chart-card">
+        <div className="card__header">
+          <h3>Transaction impact</h3>
+          <span className="muted">Business impact from the pasted JSON only</span>
+        </div>
+        {result?.business_impact ? (
+          <div className="impact-summary impact-summary--single">
+            <div>
+              <span>Amount</span>
+              <strong>{formatCurrency.format(result.business_impact.transaction_amount)}</strong>
+            </div>
+            <div>
+              <span>Expected fraud loss</span>
+              <strong>{formatCurrency.format(result.business_impact.expected_fraud_loss)}</strong>
+            </div>
+            <div>
+              <span>False positive friction</span>
+              <strong>{formatCurrency.format(result.business_impact.false_positive_cost)}</strong>
+            </div>
+            <div>
+              <span>Net benefit</span>
+              <strong>{formatCurrency.format(result.business_impact.net_benefit)}</strong>
+            </div>
+          </div>
+        ) : (
+          <p className="muted">Run a prediction to calculate transaction-level impact.</p>
+        )}
       </section>
     </div>
   );

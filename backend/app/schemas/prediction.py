@@ -14,12 +14,22 @@ class PredictionResponse(BaseModel):
     model_version: str
     threshold: float
     explanations: List["FeatureContribution"] = Field(default_factory=list)
+    business_impact: Optional["BusinessImpact"] = None
 
 
 class FeatureContribution(BaseModel):
     feature: str
     contribution: float
     direction: str
+
+
+class BusinessImpact(BaseModel):
+    threshold: float
+    flagged: bool
+    transaction_amount: float
+    expected_fraud_loss: float
+    false_positive_cost: float
+    net_benefit: float
 
 
 PredictionResponse.model_rebuild()

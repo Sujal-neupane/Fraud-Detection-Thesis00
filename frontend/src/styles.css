@@ -70,6 +70,53 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+.analysis-note {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(15, 105, 49, 0.06);
+  border: 1px solid rgba(15, 105, 49, 0.08);
+}
+
+.analysis-note p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.hero__card h2 {
+  margin-top: 0;
+}
+
+.hero__card {
+  max-width: 100%;
+}
+
+.hero__text h1 {
+  max-width: 14ch;
+}
+
+.kpi-card em {
+  font-style: normal;
+}
+
+.kpi-card strong {
+  line-height: 1.1;
+}
+
+.impact-summary {
+  align-items: stretch;
+}
+
+.panel__result,
+.result-preview {
+  overflow: hidden;
+}
+
+.result-preview pre {
+  max-height: 160px;
+  overflow: auto;
+}
 
 .hero__meta span,
 .snapshot span {
@@ -226,6 +273,32 @@ h3 {
   gap: 10px;
 }
 
+.impact-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.impact-summary div {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(15, 105, 49, 0.08);
+}
+
+.impact-summary span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.impact-summary strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
 .impact-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
@@ -309,6 +382,33 @@ button:disabled {
   padding: 16px;
   display: grid;
   gap: 8px;
+}
+
+.result-preview {
+  margin-top: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 105, 49, 0.1);
+}
+
+.result-preview span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.result-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "SF Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  color: var(--ink);
 }
 
 .status {

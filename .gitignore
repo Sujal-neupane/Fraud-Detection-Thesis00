@@ -15,6 +15,7 @@ dist/
 backend/data/
 backend/artifacts/
 backend/mlruns/
+backend/catboost_info/
 
 # OS
 .DS_Store
