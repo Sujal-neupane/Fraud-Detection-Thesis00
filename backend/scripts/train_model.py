@@ -14,6 +14,16 @@ from catboost import CatBoostClassifier, Pool
 from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score, roc_auc_score
 from scipy import stats
 
+try:
+    import optuna
+except ImportError:
+    optuna = None
+
+try:
+    from imblearn.over_sampling import SMOTENC
+except ImportError:
+    SMOTENC = None
+
 TARGET_COL = "isFraud"
 TIME_COL = "TransactionDT"
 ID_COL = "TransactionID"
@@ -39,6 +49,9 @@ def parse_args() -> argparse.Namespace:
         default=Path(__file__).resolve().parents[1] / "artifacts",
     )
     parser.add_argument("--train-ratio", type=float, default=0.8)
+    parser.add_argument("--tune", action="store_true", help="Run Optuna hyperparameter tuning")
+    parser.add_argument("--n-trials", type=int, default=10, help="Number of Optuna trials")
+    parser.add_argument("--use-smote", action="store_true", help="Apply SMOTENC for class imbalance")
     parser.add_argument("--valid-ratio", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--iterations", type=int, default=300)
@@ -253,22 +266,60 @@ def main() -> None:
     x_valid = apply_imputation(x_valid, numeric_map, categorical_cols)
     x_test = apply_imputation(x_test, numeric_map, categorical_cols)
 
+    if args.use_smote:
+        if SMOTENC is None:
+            raise ImportError("imbalanced-learn is required for SMOTENC.")
+        print("Applying SMOTENC class oversampling...")
+        cat_indices = [x_train.columns.get_loc(c) for c in categorical_cols]
+        smote = SMOTENC(categorical_features=cat_indices, random_state=args.seed)
+        x_train, y_train = smote.fit_resample(x_train, y_train)
+
     train_pool = Pool(x_train, y_train, cat_features=categorical_cols)
     valid_pool = Pool(x_valid, y_valid, cat_features=categorical_cols)
     test_pool = Pool(x_test, y_test, cat_features=categorical_cols)
 
-    model = CatBoostClassifier(
-        iterations=args.iterations,
-        depth=args.depth,
-        learning_rate=args.learning_rate,
-        loss_function="Logloss",
-        eval_metric="AUC",
-        random_seed=args.seed,
-        auto_class_weights="Balanced",
-        l2_leaf_reg=6.0,
-        random_strength=1.5,
-        verbose=False,
-    )
+    best_params = {
+        "iterations": args.iterations,
+        "depth": args.depth,
+        "learning_rate": args.learning_rate,
+        "loss_function": "Logloss",
+        "eval_metric": "AUC",
+        "random_seed": args.seed,
+        "auto_class_weights": "Balanced",
+        "l2_leaf_reg": 6.0,
+        "random_strength": 1.5,
+        "verbose": False,
+    }
+
+    if args.tune:
+        if optuna is None:
+            raise ImportError("optuna is required for hyperparameter tuning. Run pip install optuna")
+        print("Running Optuna hyperparameter tuning...")
+        
+        def objective(trial: optuna.Trial) -> float:
+            param = {
+                "iterations": trial.suggest_int("iterations", 100, 300),
+                "depth": trial.suggest_int("depth", 4, 10),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+                "l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1.0, 10.0),
+                "random_strength": trial.suggest_float("random_strength", 0.1, 5.0, log=True),
+                "loss_function": "Logloss",
+                "eval_metric": "AUC",
+                "random_seed": args.seed,
+                "auto_class_weights": "Balanced",
+                "verbose": False,
+            }
+            model_opt = CatBoostClassifier(**param)
+            model_opt.fit(train_pool, eval_set=valid_pool, early_stopping_rounds=20)
+            preds = model_opt.predict_proba(valid_pool)[:, 1]
+            return float(roc_auc_score(y_valid, preds))
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=args.n_trials)
+        print("Best Optuna params:", study.best_params)
+        best_params.update(study.best_params)
+
+    model = CatBoostClassifier(**best_params)
 
     model.fit(train_pool, eval_set=valid_pool, early_stopping_rounds=50)
 
