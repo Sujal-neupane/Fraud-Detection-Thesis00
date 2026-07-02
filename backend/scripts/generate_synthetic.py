@@ -53,7 +53,7 @@ def sample_by_fraud_ratio(
     df: pd.DataFrame, rows: int, fraud_rate: float, rng: np.random.Generator
 ) -> pd.DataFrame:
     if TARGET_COL not in df.columns:
-        return df.sample(n=rows, replace=True, random_state=rng.integers(0, 1_000_000))
+        return df.sample(n=rows, replace=True, random_state=int(rng.integers(0, 1_000_000)))
 
     fraud = df[df[TARGET_COL] == 1]
     non_fraud = df[df[TARGET_COL] == 0]
@@ -62,15 +62,15 @@ def sample_by_fraud_ratio(
     non_fraud_rows = rows - fraud_rows
 
     fraud_sample = fraud.sample(
-        n=fraud_rows, replace=True, random_state=rng.integers(0, 1_000_000)
+        n=fraud_rows, replace=True, random_state=int(rng.integers(0, 1_000_000))
     )
     non_fraud_sample = non_fraud.sample(
-        n=non_fraud_rows, replace=True, random_state=rng.integers(0, 1_000_000)
+        n=non_fraud_rows, replace=True, random_state=int(rng.integers(0, 1_000_000))
     )
 
-    combined = pd.concat([fraud_sample, non_fraud_sample], ignore_index=True)
+    combined: pd.DataFrame = pd.concat([fraud_sample, non_fraud_sample], ignore_index=True)  # type: ignore[assignment]
     combined = combined.sample(
-        frac=1.0, replace=False, random_state=rng.integers(0, 1_000_000)
+        frac=1.0, replace=False, random_state=int(rng.integers(0, 1_000_000))
     ).reset_index(drop=True)
 
     return combined

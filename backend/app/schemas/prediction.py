@@ -15,6 +15,9 @@ class PredictionResponse(BaseModel):
     threshold: float
     explanations: List["FeatureContribution"] = Field(default_factory=list)
     business_impact: Optional["BusinessImpact"] = None
+    dynamic_threshold: Optional[float] = None
+    dynamic_is_fraud: Optional[bool] = None
+    dynamic_business_impact: Optional["BusinessImpact"] = None
 
 
 class FeatureContribution(BaseModel):
@@ -33,3 +36,4 @@ class BusinessImpact(BaseModel):
 
 
 PredictionResponse.model_rebuild()
+
