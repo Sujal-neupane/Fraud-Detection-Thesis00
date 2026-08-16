@@ -1,0 +1,444 @@
+{
+  "valid_auc": 0.5,
+  "test_auc": 0.5,
+  "valid_pr_auc": 0.0,
+  "test_pr_auc": 0.0,
+  "threshold": 0.75,
+  "selected_precision": 0.0,
+  "selected_recall": 0.0,
+  "best_f1": 0.0,
+  "business_impact": {
+    "threshold": 0.75,
+    "flagged_per_10k": 0.0,
+    "average_fraud_value": 250.0,
+    "false_positive_cost": 5.0,
+    "estimated_savings": 459755.18509408296,
+    "estimated_friction": 0.0,
+    "net_benefit": 459755.18509408296
+  },
+  "drift_summary": [
+    {
+      "feature": "TransactionID",
+      "ks": 1.0,
+      "psi": 6.900847523739034
+    },
+    {
+      "feature": "isFraud",
+      "ks": 0.004864784773258357,
+      "psi": 0.0
+    },
+    {
+      "feature": "TransactionDT",
+      "ks": 0.99,
+      "psi": 8.283097487180378
+    },
+    {
+      "feature": "TransactionAmt",
+      "ks": 0.10530353574694346,
+      "psi": 0.1455278965895096
+    },
+    {
+      "feature": "card1",
+      "ks": 0.08081950418261252,
+      "psi": 0.17453893950806276
+    },
+    {
+      "feature": "card2",
+      "ks": 0.06474142310427744,
+      "psi": 0.039624464314273924
+    },
+    {
+      "feature": "card3",
+      "ks": 0.022615826192975974,
+      "psi": 0.015052958034618452
+    },
+    {
+      "feature": "card5",
+      "ks": 0.03653774511464081,
+      "psi": 0.06669406926001153
+    },
+    {
+      "feature": "addr1",
+      "ks": 0.07155086869644733,
+      "psi": 0.08894837046188568
+    },
+    {
+      "feature": "addr2",
+      "ks": 0.003251938903376571,
+      "psi": 0.002968038206578285
+    },
+    {
+      "feature": "dist1",
+      "ks": 0.041922901073593644,
+      "psi": 0.009454943334741273
+    },
+    {
+      "feature": "dist2",
+      "ks": 0.03046635282961363,
+      "psi": 0.015655815019510768
+    },
+    {
+      "feature": "C1",
+      "ks": 0.03725124462356488,
+      "psi": 0.02235631569084658
+    },
+    {
+      "feature": "C2",
+      "ks": 0.04401031259525179,
+      "psi": 0.0180730878109918
+    },
+    {
+      "feature": "C3",
+      "ks": 0.003962475022860401,
+      "psi": 0.0
+    },
+    {
+      "feature": "C4",
+      "ks": 0.016760761337081376,
+      "psi": 0.005123240886094891
+    },
+    {
+      "feature": "C5",
+      "ks": 0.038030954719409316,
+      "psi": 0.006859491588769693
+    },
+    {
+      "feature": "C6",
+      "ks": 0.04332974904324849,
+      "psi": 0.02467766376386878
+    },
+    {
+      "feature": "C7",
+      "ks": 0.02703059911267658,
+      "psi": 0.0005040561830586875
+    },
+    {
+      "feature": "C8",
+      "ks": 0.024947336336234693,
+      "psi": 0.004673732103569922
+    },
+    {
+      "feature": "C9",
+      "ks": 0.05851771260202532,
+      "psi": 0.02026323165812514
+    },
+    {
+      "feature": "C10",
+      "ks": 0.017300521556541493,
+      "psi": 0.0016088284913498073
+    },
+    {
+      "feature": "C11",
+      "ks": 0.03833355911538594,
+      "psi": 0.035308813896619155
+    },
+    {
+      "feature": "C12",
+      "ks": 0.03929488264977821,
+      "psi": 6.957115374383144e-05
+    },
+    {
+      "feature": "C13",
+      "ks": 0.10141480678700854,
+      "psi": 0.10131968388819404
+    }
+  ],
+  "roc_curve": [
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 0.0,
+      "tpr": 0.0
+    },
+    {
+      "fpr": 1.0,
+      "tpr": 1.0
+    }
+  ],
+  "pr_curve": [
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 0.0,
+      "recall": 1.0
+    },
+    {
+      "precision": 1.0,
+      "recall": 0.0
+    }
+  ],
+  "global_importance": [
+    {
+      "feature": "id_01",
+      "importance": 13.649361008601474
+    },
+    {
+      "feature": "V218",
+      "importance": 13.140079803980266
+    },
+    {
+      "feature": "V264",
+      "importance": 12.995639545131382
+    },
+    {
+      "feature": "id_13",
+      "importance": 6.880691311289205
+    },
+    {
+      "feature": "V43",
+      "importance": 3.5815315426908296
+    },
+    {
+      "feature": "V39",
+      "importance": 2.8426990809065646
+    },
+    {
+      "feature": "id_20",
+      "importance": 2.773497487287758
+    },
+    {
+      "feature": "V91",
+      "importance": 2.5880019365879
+    },
+    {
+      "feature": "id_05",
+      "importance": 2.1113621489340386
+    },
+    {
+      "feature": "id_16",
+      "importance": 2.0621971938109733
+    }
+  ],
+  "rows": {
+    "train": 80,
+    "valid": 10,
+    "test": 10
+  },
+  "fraud_rate": {
+    "train": 0.05,
+    "valid": 0.0,
+    "test": 0.0
+  },
+  "model_version": "20260627094812",
+  "input_path": "/Users/sujalneupane/Documents/developer/Fraud/backend/data/synthetic/ieee-cis/synthetic_2019_2025.csv"
+}
