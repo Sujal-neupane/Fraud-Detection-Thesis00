@@ -60,7 +60,7 @@ def build_imputation_map(df: pd.DataFrame) -> Tuple[Dict[str, float], list[str]]
     numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
     numeric_cols = [col for col in numeric_cols if col != TARGET_COL]
 
-    medians = df[numeric_cols].median(numeric_only=True).to_dict()
+    medians: Dict[str, float] = pd.Series(df[numeric_cols].median(numeric_only=True)).to_dict()
     for col, value in medians.items():
         if pd.isna(value):
             medians[col] = 0.0
@@ -109,8 +109,9 @@ def save_outputs(
     def to_native(value: object) -> object:
         if isinstance(value, pd.Timestamp):
             return value.isoformat()
-        if hasattr(value, "item"):
-            return value.item()
+        item_fn = getattr(value, "item", None)
+        if callable(item_fn):
+            return item_fn()
         return value
 
     metadata = {

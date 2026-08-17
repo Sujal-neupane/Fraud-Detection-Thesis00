@@ -6,3 +6,9 @@ pandas
 scikit-learn
 joblib
 catboost
+mlflow
+scipy
+xgboost
+optuna
+imbalanced-learn
+pytest
